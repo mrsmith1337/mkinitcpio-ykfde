@@ -52,6 +52,7 @@ Build RPM package (preferred)
 
 > rpmbuild -bb ~/rpmbuild/SPECS/mkinitcpio-ykfde.spec
 
+Then install the rpm package from ~/rpmbuild/RPMS/.
 
 Usage
 -----

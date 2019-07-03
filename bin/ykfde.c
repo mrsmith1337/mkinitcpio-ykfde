@@ -116,9 +116,10 @@ int main(int argc, char **argv) {
 	size_t len;
 	int8_t rc = EXIT_FAILURE;
 	/* cryptsetup */
-	const char * device_name1;
+	const char * device_name[4];
 	int8_t luks_slot = -1;
-	struct crypt_device *cryptdevice;
+	int numdevices = 1; // number of devices in configuration
+	struct crypt_device *cryptdevice[4];
 	crypt_status_info cryptstatus;
 	crypt_keyslot_info cryptkeyslot;
 	char * passphrase = NULL;
@@ -209,9 +210,14 @@ int main(int argc, char **argv) {
 		goto out10;
 	}
 
-	if ((device_name1 = iniparser_getstring(ini, "general:" CONFDEVNAME1, NULL)) == NULL) {
+	if ((device_name[0] = iniparser_getstring(ini, "general:device name 1", NULL)) == NULL) {
 		fprintf(stderr, "Could not read LUKS device from configuration file.\n");
 		goto out20;
+	}
+	for (int i = 1; i < 4; i++) {
+		if ((device_name[i] = iniparser_getstring(ini, "general:device name " + (i + 1), NULL)) != NULL) {
+			numdevices++;
+		}
 	}
 
 	/* init and open first Yubikey */
@@ -329,73 +335,75 @@ int main(int argc, char **argv) {
 
 	/* get status of crypt device
 	 * We expect this to be active (or busy). It is the actual root device, no? */
-	cryptstatus = crypt_status(cryptdevice, device_name1);
+	cryptstatus = crypt_status(cryptdevice[0], device_name[0]);
 	if (cryptstatus != CRYPT_ACTIVE && cryptstatus != CRYPT_BUSY) {
-		fprintf(stderr, "Device %s is invalid or inactive.\n", device_name1);
+		fprintf(stderr, "Device %s is invalid or inactive.\n", device_name[0]);
 		goto out50;
 	}
 
-	/* initialize crypt device */
-	if (crypt_init_by_name(&cryptdevice, device_name1) < 0) {
-		fprintf(stderr, "Device %s failed to initialize.\n", device_name1);
-		goto out60;
-	}
-
-	cryptkeyslot = crypt_keyslot_status(cryptdevice, luks_slot);
-
-	if (cryptkeyslot == CRYPT_SLOT_INVALID) {
-		fprintf(stderr, "Key slot %d is invalid.\n", luks_slot);
-		goto out60;
-	} else if (cryptkeyslot == CRYPT_SLOT_ACTIVE || cryptkeyslot == CRYPT_SLOT_ACTIVE_LAST) {
-		/* read challenge from file */
-		if ((challengefile = open(challengefilename, O_RDONLY)) < 0) {
-			perror("Failed opening challenge file for reading");
+	for (int i = 0; i < numdevices; i++) { // start loop
+		/* initialize crypt devices */
+		if (crypt_init_by_name(&cryptdevice[i], device_name[i]) < 0) {
+			fprintf(stderr, "Device %s failed to initialize.\n", device_name[i]);
 			goto out60;
 		}
 
-		if (read(challengefile, challenge_old, CHALLENGELEN) < 0) {
-			perror("Failed reading challenge from file");
+		cryptkeyslot = crypt_keyslot_status(cryptdevice[i], luks_slot);
+
+		if (cryptkeyslot == CRYPT_SLOT_INVALID) {
+			fprintf(stderr, "Key slot %d is invalid.\n", luks_slot);
 			goto out60;
+		} else if (cryptkeyslot == CRYPT_SLOT_ACTIVE || cryptkeyslot == CRYPT_SLOT_ACTIVE_LAST) {
+			/* read challenge from file */
+			if ((challengefile = open(challengefilename, O_RDONLY)) < 0) {
+				perror("Failed opening challenge file for reading");
+				goto out60;
+			}
+
+			if (read(challengefile, challenge_old, CHALLENGELEN) < 0) {
+				perror("Failed reading challenge from file");
+				goto out60;
+			}
+
+			challengefile = close(challengefile);
+			/* finished reading challenge */
+
+			/* copy the second factor */
+			len = strlen(second_factor);
+			memcpy(challenge_old, second_factor, len < MAX2FLEN ? len : MAX2FLEN);
+
+			/* do challenge/response and encode to hex */
+			if (yk_challenge_response(yk, yk_slot, true,
+					CHALLENGELEN, (unsigned char *) challenge_old,
+					RESPONSELEN, (unsigned char *) response_old) == 0) {
+				perror("yk_challenge_response() failed");
+				goto out60;
+			}
+			yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
+
+			if (crypt_keyslot_change_by_passphrase(cryptdevice[i], luks_slot, luks_slot,
+					passphrase_old, PASSPHRASELEN,
+					passphrase_new, PASSPHRASELEN) < 0) {
+				fprintf(stderr, "Could not update passphrase for key slot %d.\n", luks_slot);
+				goto out60;
+			}
+
+			if (unlink(challengefilename) < 0) {
+				fprintf(stderr, "Failed to delete old challenge file.\n");
+				goto out60;
+			}
+		} else { /* ck == CRYPT_SLOT_INACTIVE */
+			if ((passphrase = ask_secret("existing LUKS passphrase")) == NULL)
+				goto out60;
+
+			if (crypt_keyslot_add_by_passphrase(cryptdevice[i], luks_slot,
+					passphrase, strlen(passphrase),
+					passphrase_new, PASSPHRASELEN) < 0) {
+				fprintf(stderr, "Could not add passphrase for key slot %d.\n", luks_slot);
+				goto out60;
+			}
 		}
-
-		challengefile = close(challengefile);
-		/* finished reading challenge */
-
-		/* copy the second factor */
-		len = strlen(second_factor);
-		memcpy(challenge_old, second_factor, len < MAX2FLEN ? len : MAX2FLEN);
-
-		/* do challenge/response and encode to hex */
-		if (yk_challenge_response(yk, yk_slot, true,
-				CHALLENGELEN, (unsigned char *) challenge_old,
-				RESPONSELEN, (unsigned char *) response_old) == 0) {
-			perror("yk_challenge_response() failed");
-			goto out60;
-		}
-		yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
-
-		if (crypt_keyslot_change_by_passphrase(cryptdevice, luks_slot, luks_slot,
-				passphrase_old, PASSPHRASELEN,
-				passphrase_new, PASSPHRASELEN) < 0) {
-			fprintf(stderr, "Could not update passphrase for key slot %d.\n", luks_slot);
-			goto out60;
-		}
-
-		if (unlink(challengefilename) < 0) {
-			fprintf(stderr, "Failed to delete old challenge file.\n");
-			goto out60;
-		}
-	} else { /* ck == CRYPT_SLOT_INACTIVE */
-		if ((passphrase = ask_secret("existing LUKS passphrase")) == NULL)
-			goto out60;
-
-		if (crypt_keyslot_add_by_passphrase(cryptdevice, luks_slot,
-				passphrase, strlen(passphrase),
-				passphrase_new, PASSPHRASELEN) < 0) {
-			fprintf(stderr, "Could not add passphrase for key slot %d.\n", luks_slot);
-			goto out60;
-		}
-	}
+	} // end loop
 
 	if (rename(challengefiletmpname, challengefilename) < 0) {
 		fprintf(stderr, "Failed to rename new challenge file.\n");
@@ -408,7 +416,9 @@ int main(int argc, char **argv) {
 
 out60:
 	/* free crypt context */
-	crypt_free(cryptdevice);
+	for (int i = 0; i < numdevices; i++) {
+		crypt_free(cryptdevice[i]);
+	}
 
 out50:
 	/* close the challenge file */

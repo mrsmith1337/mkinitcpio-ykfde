@@ -12,8 +12,8 @@ Requirements, building, installing and usage
 Most of this is generic, but it still differs in detail for
 distributions. Please look at what matches best for you.
 
+* [dracut based initramfs (Opensuse, Fedora, ...)](README-dracut.md)
 * [mkinitcpio based initramfs (Arch Linux, ...)](README-mkinitcpio.md)
-* [dracut based initramfs (Fedora, ...)](README-dracut.md)
 
 Limitation / TODO
 -----------------
