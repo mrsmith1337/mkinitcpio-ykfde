@@ -223,7 +223,6 @@ int main(int argc, char **argv) {
 	if ((device_name[3] = iniparser_getstring(ini, "general:device name 4", NULL)) != NULL) {
 		numdevices++;
 	}
-	fprintf(stderr, "WARN: Number of devices is %d.\n", numdevices);
 
 	/* init and open first Yubikey */
 	if (yk_init() == 0) {
