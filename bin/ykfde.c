@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 	size_t len;
 	int8_t rc = EXIT_FAILURE;
 	/* cryptsetup */
-	const char * device_name;
+	const char * device_name1;
 	int8_t luks_slot = -1;
 	struct crypt_device *cryptdevice;
 	crypt_status_info cryptstatus;
@@ -209,9 +209,7 @@ int main(int argc, char **argv) {
 		goto out10;
 	}
 
-	if ((device_name = iniparser_getstring(ini, "general:" CONFDEVNAME, NULL)) == NULL) {
-		/* read from crypttab? */
-		/* get device from currently open devices? */
+	if ((device_name1 = iniparser_getstring(ini, "general:" CONFDEVNAME1, NULL)) == NULL) {
 		fprintf(stderr, "Could not read LUKS device from configuration file.\n");
 		goto out20;
 	}
@@ -331,15 +329,15 @@ int main(int argc, char **argv) {
 
 	/* get status of crypt device
 	 * We expect this to be active (or busy). It is the actual root device, no? */
-	cryptstatus = crypt_status(cryptdevice, device_name);
+	cryptstatus = crypt_status(cryptdevice, device_name1);
 	if (cryptstatus != CRYPT_ACTIVE && cryptstatus != CRYPT_BUSY) {
-		fprintf(stderr, "Device %s is invalid or inactive.\n", device_name);
+		fprintf(stderr, "Device %s is invalid or inactive.\n", device_name1);
 		goto out50;
 	}
 
 	/* initialize crypt device */
-	if (crypt_init_by_name(&cryptdevice, device_name) < 0) {
-		fprintf(stderr, "Device %s failed to initialize.\n", device_name);
+	if (crypt_init_by_name(&cryptdevice, device_name1) < 0) {
+		fprintf(stderr, "Device %s failed to initialize.\n", device_name1);
 		goto out60;
 	}
 

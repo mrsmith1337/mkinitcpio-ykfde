@@ -27,6 +27,8 @@ install() {
 		inst_simple /usr/bin/systemd-ask-password
 
 	fi
+	# include challenge files
+	inst_multiple -o /etc/ykfde.d/challenge-*
 
 	dracut_need_initqueue
 }

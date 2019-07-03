@@ -16,7 +16,13 @@
 #define CHALLENGEDIR	"/etc/ykfde.d/"
 
 /* config file device name */
-#define CONFDEVNAME	"device name"
+#define CONFDEVNAME1	"device name 1"
+/* config file device name */
+#define CONFDEVNAME2	"device name 2"
+/* config file device name */
+#define CONFDEVNAME3	"device name 3"
+/* config file device name */
+#define CONFDEVNAME4	"device name 4"
 /* config file Yubikey slot */
 #define CONFYKSLOT	"yk slot"
 /* config file LUKS slot */

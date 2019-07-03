@@ -1,5 +1,5 @@
-Full disk encryption with Yubikey (Yubico key) for dracut
-=========================================================
+Full disk encryption with Yubikey (Yubico key) for dracut (for Opensuse 15.1)
+=============================================================================
 
 This enables you to automatically unlock a LUKS encrypted filesystem from
 a `systemd`-enabled initramfs.
@@ -10,16 +10,16 @@ Requirements
 To compile and use Yubikey full disk encryption you need:
 
 * libyubikey-devel
-* ykpers-devel
-* iniparser-devel
+* libykpers-devel
+* libiniparser-devel
 * libarchive-devel
-* cryptsetup-devel
-* python-markdown
+* libcryptsetup-devel
+* python2-Markdown
 * systemd-devel
-* keyutils-libs-devel
+* keyutils-devel
 
 Additionally you will need to have `make` and `pkg-config` installed to
-successfully compile.
+successfully compile, and `rpmbuild` to create rpm.
 
 Build and install
 -----------------
@@ -28,8 +28,8 @@ Building and installing is very easy. Just run:
 
 > make
 
-Some distributions do have different names for `markdown` executable.
-For Fedora you have to run:
+Distributions like Opensuse do have different names for `markdown` executable.
+For Opensuse you have to run:
 
 > make MD=markdown_py
 
@@ -41,6 +41,14 @@ This will place the files in their desired places in the filesystem.
 Keep in mind that you need `root` privileges for installation, so switch
 user or prepend the last command with `sudo`.
 
+Build RPM package (preferred)
+-----------------------------
+
+> mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+> wget https://github.com/mrsmith1337/mkinitcpio-ykfde/archive/master.zip -o ~/rpmbuild/SOURCES/mkinitcpio-ykfde-0.7.6.zip
+> rpmbuild -bb ~/rpmbuild/SPECS/mkinitcpio-ykfde.spec
+
+
 Usage
 -----
 
@@ -49,7 +57,7 @@ Usage
 Make sure systemd knows about your encrypted device by
 adding a line to `/etc/crypttab`. It should read like:
 
-> `mapping-name` /dev/`LUKS-device` -
+> `mapping-name` `UUID=<uuid>`
 
 Usually there is already an entry for your device.
 
@@ -59,10 +67,17 @@ add a new section with your key's decimal serial number containing the key
 slot setting. The minimal file should look like this:
 
     [general]
-    device name = crypt
+    device name 1 = cryptroot
 
     [1234567]
     luks slot = 1
+
+You can add up to four (4) device names if you have several crypted devices:
+
+    ...
+    device name 2 = crypthome
+    device name 3 = cryptswap
+    ...
 
 *Be warned*: Do not remove or overwrite your interactive (regular) key!
 Keep that for backup and rescue - LUKS encrypted volumes have a total
@@ -73,8 +88,9 @@ of 8 slots (from 0 to 7).
 `ykfde` will read its information from these files and understands some
 additional options. Run `ykfde --help` for details. Then prepare
 the key. Plug it in and make sure it is configured for `HMAC-SHA1`. This can
-be done with `ykpersonalize` from terminal (package `ykpers`)
-or with GUI application `YubiKey Personalization Tool`. After that, run:
+be done with `ykman` from terminal (package `yubikey-manager`; To use
+slot 2 for challenge-response try `ykman otp chalresp -g 2`).
+After that, run:
 
 > ykfde
 
@@ -103,7 +119,7 @@ Use switches `--ask-2nd-factor` and `--ask-new-2nd-factor` for that.
 
 Make sure to enable second factor in `/etc/ykfde.conf`.
 
-### cpio archive with challenges
+### cpio archive with challenges (for now, not supported, i.e. not needed on Opensuse)
 
 Every time you update a challenge and/or a second factor run:
 
@@ -121,7 +137,9 @@ Build the initramfs:
 
 > dracut -f
 
-### Boot loader
+This should be done after all key setups/changes.
+
+### Boot loader (for now, not supported, i.e. not needed on Opensuse)
 
 Make sure to load the cpio archive `/boot/ykfde-challenges.img`
 as an additional initramfs.
