@@ -46,7 +46,7 @@ Build RPM package (preferred)
 
 > mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
-> wget https://github.com/mrsmith1337/mkinitcpio-ykfde/archive/master.zip -o ~/rpmbuild/SOURCES/mkinitcpio-ykfde-0.7.6.zip
+> wget https://github.com/mrsmith1337/mkinitcpio-ykfde/archive/master.zip -o ~/rpmbuild/SOURCES/mkinitcpio-ykfde-master.zip
 
 > wget https://github.com/mrsmith1337/mkinitcpio-ykfde/raw/master/mkinitcpio-ykfde.spec -o ~/rpmbuild/SPECS/mkinitcpio-ykfde.spec
 
