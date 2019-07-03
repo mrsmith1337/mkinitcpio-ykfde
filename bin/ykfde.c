@@ -214,10 +214,14 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Could not read LUKS device from configuration file.\n");
 		goto out20;
 	}
-	for (int i = 1; i < 4; i++) {
-		if ((device_name[i] = iniparser_getstring(ini, "general:device name " + (i + 1), NULL)) != NULL) {
-			numdevices++;
-		}
+	if ((device_name[1] = iniparser_getstring(ini, "general:device name 2", NULL)) != NULL) {
+		numdevices++;
+	}
+	if ((device_name[2] = iniparser_getstring(ini, "general:device name 3", NULL)) != NULL) {
+		numdevices++;
+	}
+	if ((device_name[3] = iniparser_getstring(ini, "general:device name 4", NULL)) != NULL) {
+		numdevices++;
 	}
 	fprintf(stderr, "WARN: Number of devices is %d.\n", numdevices);
 
