@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
 			numdevices++;
 		}
 	}
-	fprintf(stderr, "WARN: Number of devices is %s.\n", numdevices);
+	fprintf(stderr, "WARN: Number of devices is %d.\n", numdevices);
 
 	/* init and open first Yubikey */
 	if (yk_init() == 0) {
