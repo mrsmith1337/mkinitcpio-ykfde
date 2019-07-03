@@ -1,11 +1,12 @@
 Name:           mkinitcpio-ykfde
 Version:        master
-Release:        lp151.1
+Release:        lp151.6
 Summary:        Full disk encryption with Yubikey
-
+Group:          Productivity/Networking/Security
 License:        GPLv3+
 URL:            https://github.com/mrsmith1337/mkinitcpio-ykfde
 Source0:        %{name}-%{version}.zip
+Distribution:   openSUSE Leap 15.1
 
 %description
 Full disk encryption with Yubikey (Yubico key)
