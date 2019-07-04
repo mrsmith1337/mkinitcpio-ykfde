@@ -1,5 +1,5 @@
 Name:           mkinitcpio-ykfde
-Version:        master
+Version:        0.7.8
 Release:        lp151.1
 Summary:        Full disk encryption with Yubikey
 Group:          Productivity/Networking/Security
@@ -46,4 +46,7 @@ rm -rf %{buildroot}
    /usr/share/doc/ykfde/README.md
 
 %changelog
-
+* Thu Jul 04 2019 mrsmith1337 <mrmith1337@saab96.33mail.com> 0.7.8-lp151.1
+- Add changelog
+* Thu Jul 04 2019 mrsmith1337 <mrmith1337@saab96.33mail.com> 0.7.7-lp151.1
+- Opensuse support
