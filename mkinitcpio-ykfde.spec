@@ -1,6 +1,6 @@
 Name:           mkinitcpio-ykfde
-Version:        master
-Release:        lp151.6
+Version:        0.7.7
+Release:        lp151.1
 Summary:        Full disk encryption with Yubikey
 Group:          Productivity/Networking/Security
 License:        GPLv3+
