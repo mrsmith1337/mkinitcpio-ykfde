@@ -6,6 +6,8 @@ mkinitcpio-ykfde
 This allows to automatically unlock a LUKS encrypted hard disk from `systemd`-
 enabled initramfs.
 
+This fork adds support for Opensuse (tested with Opensuse Leap 15.1).
+
 Requirements, building, installing and usage
 --------------------------------------------
 
@@ -18,7 +20,7 @@ distributions. Please look at what matches best for you.
 Limitation / TODO
 -----------------
 
-No known limitations. Yeah!
+Maximum of four encrypted devices supported for now.
 
 ### Upstream
 
