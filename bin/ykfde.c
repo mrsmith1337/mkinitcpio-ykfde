@@ -345,14 +345,16 @@ int main(int argc, char **argv) {
 		goto out50;
 	}
 
-	for (int i = 0; i < numdevices; i++) { // start loop
+	bool delete_challenge_file = false; // flag if challengefile should be removed
+
+	for (int idx = 0; idx < numdevices; idx++) { // start loop
 		/* initialize crypt devices */
-		if (crypt_init_by_name(&cryptdevice[i], device_name[i]) < 0) {
-			fprintf(stderr, "Device %s failed to initialize.\n", device_name[i]);
+		if (crypt_init_by_name(&cryptdevice[idx], device_name[idx]) < 0) {
+			fprintf(stderr, "Device %s failed to initialize.\n", device_name[idx]);
 			goto out60;
 		}
 
-		cryptkeyslot = crypt_keyslot_status(cryptdevice[i], luks_slot);
+		cryptkeyslot = crypt_keyslot_status(cryptdevice[idx], luks_slot);
 
 		if (cryptkeyslot == CRYPT_SLOT_INVALID) {
 			fprintf(stderr, "Key slot %d is invalid.\n", luks_slot);
@@ -385,22 +387,26 @@ int main(int argc, char **argv) {
 			}
 			yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
 
-			if (crypt_keyslot_change_by_passphrase(cryptdevice[i], luks_slot, luks_slot,
+			if (crypt_keyslot_change_by_passphrase(cryptdevice[idx], luks_slot, luks_slot,
 					passphrase_old, PASSPHRASELEN,
 					passphrase_new, PASSPHRASELEN) < 0) {
 				fprintf(stderr, "Could not update passphrase for key slot %d.\n", luks_slot);
 				goto out60;
 			}
 
-			if (unlink(challengefilename) < 0) {
-				fprintf(stderr, "Failed to delete old challenge file.\n");
+			delete_challenge_file = true;
+
+		} else { /* ck == CRYPT_SLOT_INACTIVE */
+			char msg[256];
+			if (strlen(device_name[idx]) + 30 > 256) {  /* existing LUKS passphrase for +1 */
+				fprintf(stderr, "Too long devicename.\n");
 				goto out60;
 			}
-		} else { /* ck == CRYPT_SLOT_INACTIVE */
-			if ((passphrase = ask_secret("existing LUKS passphrase")) == NULL)
+			sprintf(msg, "existing LUKS passphrase for %s", device_name[idx]);
+			if ((passphrase = ask_secret(msg)) == NULL)
 				goto out60;
 
-			if (crypt_keyslot_add_by_passphrase(cryptdevice[i], luks_slot,
+			if (crypt_keyslot_add_by_passphrase(cryptdevice[idx], luks_slot,
 					passphrase, strlen(passphrase),
 					passphrase_new, PASSPHRASELEN) < 0) {
 				fprintf(stderr, "Could not add passphrase for key slot %d.\n", luks_slot);
@@ -409,6 +415,13 @@ int main(int argc, char **argv) {
 		}
 	} // end loop
 
+	// delete old challenge file
+	if (delete_challenge_file) {
+		if (unlink(challengefilename) < 0) {
+			fprintf(stderr, "Failed to delete old challenge file.\n");
+			goto out60;
+		}
+	}
 	if (rename(challengefiletmpname, challengefilename) < 0) {
 		fprintf(stderr, "Failed to rename new challenge file.\n");
 		goto out60;
@@ -420,8 +433,8 @@ int main(int argc, char **argv) {
 
 out60:
 	/* free crypt context */
-	for (int i = 0; i < numdevices; i++) {
-		crypt_free(cryptdevice[i]);
+	for (int idx = 0; idx < numdevices; idx++) {
+		crypt_free(cryptdevice[idx]);
 	}
 
 out50:
